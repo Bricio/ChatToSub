@@ -228,9 +228,9 @@ def try_call(*funcs, expected_type=None, args=[], kwargs={}):
 def nanoseconds_to_time(nanoseconds):
     time = int(nanoseconds / 1000000)
     seconds = time % 60
-    minutes = time % 3600
+    minutes = int(time / 60)
     hour = int(time / 3600)
-    miliseconds = int(nanoseconds / 1000)
+    miliseconds = int(nanoseconds / 1000) % 1000
     return '%02d:%02d:%02d,%03d' % (hour, minutes, seconds, miliseconds)
 
 
@@ -239,7 +239,7 @@ def convert_to_str_array(chat_lines, index, last=False):
     start = item['timestamp'] - first_timestamp
     message = '%s: %s' % (item['author'], item['text'])
     if not last:
-        duration = max(max_duration, chat_lines[index + 1]['timestamp'] - first_timestamp)
+        duration = min(max_duration, chat_lines[index + 1]['timestamp'] - item['timestamp'])
     else:
         duration = max_duration
     timecodes = '%s --> %s' % (nanoseconds_to_time(start), nanoseconds_to_time(start + duration))
@@ -254,7 +254,7 @@ if sys.argv[1] is None:
 
 chat_lines = []
 first_timestamp = None
-max_duration = 10
+max_duration = 10000000
 
 try:
     with open(sys.argv[1], encoding='utf-8', errors='ignore') as cf:
@@ -269,10 +269,10 @@ try:
             message = ''
             for item in traverse_obj(chat_item,('message','runs')):
                 if item.get('text'):
-                    message += '%s/n' % item.get('text')
+                    message += '%s ' % item.get('text')
             timestamp = int_or_none(chat_item.get('timestampUsec'))
             entrie = {
-                'text': message,
+                'text': message.strip(),
                 'author': traverse_obj(chat_item, ('authorName', 'simpleText')),
                 'timestamp': timestamp,
             }
@@ -283,6 +283,7 @@ try:
 except OSError:
     sys.exit('ERROR: chat file %s could not be read' % sys.argv[1])
 
+chat_lines = sorted(chat_lines, key=lambda x:x['timestamp'])
 out_items = []
 count = 0
 while count < len(chat_lines) - 1:
