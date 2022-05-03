@@ -21,4 +21,4 @@ It will generate the `video_with_chat.live_chat.json.str` file with the extracte
 
 Script assumes the first chat was sent at the begining of transmission. 
 
-It is up to you to sync with video it after the file is generated.
+It is up to you to sync it with video after the file is generated.
